@@ -80,6 +80,7 @@ fromEvent(document,'DOMContentLoaded').pipe(first()).subscribe(event => {
       // const [ width, height ] = (currentTexture ? [ currentTexture.width, currentTexture.height ] : [ window.innerWidth, window.innerHeight ]);
       const scale = Math.min( window.innerWidth / (columns * gridSize), window.innerHeight / (rows * gridSize) );
       app.stage.scale.set( scale, scale );
+      app.view.scrollIntoView();
     };
 
     for(let y=0; y<=currentTexture.height-gridSize; y+=gridSize) {
