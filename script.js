@@ -182,6 +182,7 @@ fromEvent(document, 'DOMContentLoaded')
         piece.rotateClockwise = function () {
           // @ts-ignore
           this.rotation = ((Math.round((this.rotation * 2) / Math.PI) + 1) * Math.PI) / 2;
+          console.log(this.rotation);
         };
         piece.interactive = true;
         piece.buttonMode = true;
