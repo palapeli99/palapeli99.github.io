@@ -16,6 +16,26 @@ const fromQueryString = q => q
     return o;
   }, {});
 
+const requestFullScreen = ['requestFullscreen', 'mozRequestFullScreen', 'webkitRequestFullScreen', 'msRequestFullscreen']
+  .map( f => window.document.documentElement[f] )
+  .find( f => f )
+  .bind( window.document.documentElement );
+const cancelFullScreen = ['exitFullscreen', 'mozCancelFullScreen', 'webkitExitFullscreen', 'msExitFullscreen']
+  .map( f => window.document[f] )
+  .find( f => f )
+  .bind( window.document );
+const isFullScreen = () => ['fullscreenElement', 'mozFullScreenElement', 'webkitFullscreenElement', 'msFullscreenElement']
+  .some( p => window.document[p] );
+
+const toggleFullScreen = () => {
+  console.log('toggleFullscreen');
+  if(isFullScreen()) {
+    cancelFullScreen();
+  } else {
+    requestFullScreen();
+  }
+}    
+
 PIXI.Sprite.prototype.bringToFront = function() {
   if (this.parent) {		
     var parent = this.parent;		
@@ -26,6 +46,9 @@ PIXI.Sprite.prototype.bringToFront = function() {
 
 
 fromEvent(document,'DOMContentLoaded').pipe(first()).subscribe(event => {
+  const fullscreenToggle = document.querySelector('#fullscreenToggle');
+  fromEvent(fullscreenToggle, 'click').subscribe( e => toggleFullScreen() );
+  
   const input = document.querySelector('input');
   const imageSelector = document.querySelector('#imageSelector');
   
@@ -49,22 +72,26 @@ fromEvent(document,'DOMContentLoaded').pipe(first()).subscribe(event => {
 
   const q = fromQueryString(window.location.search);
     
-  const textureSource = new Subject().pipe(
-    switchMap( imageUrl => PIXI.Texture.fromURL( imageUrl, { scaleMode: PIXI.SCALE_MODES.LINEAR } ))
-  );
-  let pieces = [];
-  
   let textureSubscriptions = [];
   let currentTexture;
+  const textureSource = new Subject().pipe(
+    switchMap( imageUrl => {
+      for( const subscription of textureSubscriptions.splice(0) ) {
+        subscription.unsubscribe();
+      }
+      if( currentTexture ) {
+        app.stage.removeChildren();
+        currentTexture.destroy(true);
+        pieces.splice(0);
+      }
+      return PIXI.Texture.fromURL( imageUrl, { scaleMode: PIXI.SCALE_MODES.LINEAR } );
+    })
+  );
+
+  let pieces = [];
+  
   textureSource.subscribe( nextTexture => {
-    for( const subscription of textureSubscriptions ) {
-      subscription.unsubscribe();
-    }
-    if( currentTexture ) {
-      app.stage.removeChildren();
-      currentTexture.destroy(true);
-      pieces.splice(0);
-    }
+    console.log('nextTexture', !!nextTexture);
     currentTexture = nextTexture;
     console.log('nextTexture', currentTexture.width, currentTexture.height);
     
@@ -77,10 +104,8 @@ fromEvent(document,'DOMContentLoaded').pipe(first()).subscribe(event => {
     console.log({ gridSize, columns, rows });
 
     const rescale = () => {
-      // const [ width, height ] = (currentTexture ? [ currentTexture.width, currentTexture.height ] : [ window.innerWidth, window.innerHeight ]);
       const scale = Math.min( window.innerWidth / (columns * gridSize), window.innerHeight / (rows * gridSize) );
       app.stage.scale.set( scale, scale );
-      app.view.scrollIntoView();
     };
 
     for(let y=0; y<=currentTexture.height-gridSize; y+=gridSize) {
@@ -211,6 +236,7 @@ fromEvent(document,'DOMContentLoaded').pipe(first()).subscribe(event => {
         onerror: reject
       }).readAsDataURL(file)
     )),
+    tap( _ => toggleFullScreen() ),
   ).subscribe( dataUrl => textureSource.next(dataUrl) );
 
   if(q.image) {
