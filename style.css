@@ -13,13 +13,22 @@ body {
   align-content: center;
 }
 
-#imageSelector * {
-  text-decoration: none;
+input,
+label,
+span {
   color: white;
+}
+
+button {
+  color: black;
 }
 
 #imageSelector > *:not(:first-child) {
   margin-top: 0.5rem;
+}
+
+#imageSelector > label {
+  margin-top: 1rem !important;
 }
 
 .hide {
@@ -43,5 +52,23 @@ body {
 
 #fullscreenToggle svg {
   --stroke-color: white;
-  filter: drop-shadow( 0px 0px 4px black );
+
+  filter: drop-shadow(0px 0px 4px black);
+}
+
+#numPiecesDiv {
+  margin-top: 1rem !important;
+  display: flex;
+  white-space: nowrap;
+}
+
+#numPiecesSlider {
+  width: 100%;
+}
+
+#numPieces {
+  width: 3rem;
+  margin-left: 1rem;
+  background: unset;
+  text-align: right;
 }

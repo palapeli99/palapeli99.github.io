@@ -80,7 +80,7 @@ for (const type of [PIXI.Point, PIXI.ObservablePoint]) {
       return new PIXI.Point(-this['x'], -this['y']);
     },
     values: function () {
-      return [this['x'], this['y']];
+      return ['x', 'y'].map(p => this[p]);
     },
   });
 }
