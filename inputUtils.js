@@ -3,6 +3,7 @@ import {
   startWith,
   // @ts-ignore
 } from 'https://cdn.skypack.dev/rxjs@^6.6.7/operators?min';
+import { minmax } from './math.js';
 
 const scale = (valueInput, rangeInput) => {
   valueInput.value = Math.trunc(
@@ -20,8 +21,6 @@ const unScale = (valueInput, rangeInput) => {
         Math.sqrt(rangeInput.max - rangeInput.min)
     ) - -rangeInput.min;
 };
-
-const minmax = (value, min, max) => Math.max(Math.min(value, max), min);
 
 const limitToRange = (valueInput, rangeInput) => {
   valueInput.value = minmax(valueInput.value, rangeInput.min, rangeInput.max);

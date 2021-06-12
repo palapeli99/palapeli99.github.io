@@ -1,5 +1,6 @@
 // @ts-ignore
 import * as PIXI from 'https://cdn.skypack.dev/pixi.js@^6.0.2?min';
+import { minmax } from './math.js';
 
 PIXI.Sprite.prototype.bringToFront = function () {
   if (this.parent) {
@@ -19,6 +20,9 @@ for (const type of [PIXI.Point, PIXI.ObservablePoint]) {
     },
     values: function () {
       return ['x', 'y'].map(p => this[p]);
+    },
+    limit: function(min,max) {
+      return new PIXI.Point(minmax(this['x'], min.x, max.x), minmax(this['y'], min.y, max.y));
     },
   });
 }
