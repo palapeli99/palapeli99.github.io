@@ -10,118 +10,31 @@ import {
   map,
   mergeMap,
   tap,
-  startWith,
   // @ts-ignore
 } from 'https://cdn.skypack.dev/rxjs@^6.6.7/operators?min';
-
-const fromQueryString = q =>
-  q
-    .slice(1)
-    .split('&')
-    .map(p => p.split('=').map(decodeURIComponent))
-    .reduce((o, [key, value]) => {
-      const p = o[key];
-      if (p !== undefined) {
-        Array.isArray(p) ? p.push(value) : (o[key] = [p, value]);
-      } else {
-        o[key] = value;
-      }
-      return o;
-    }, {});
-
-const requestFullScreen = [
-  'requestFullscreen',
-  'mozRequestFullScreen',
-  'webkitRequestFullScreen',
-  'msRequestFullscreen',
-]
-  .map(f => window.document.documentElement[f])
-  .find(f => f)
-  .bind(window.document.documentElement);
-const cancelFullScreen = [
-  'exitFullscreen',
-  'mozCancelFullScreen',
-  'webkitExitFullscreen',
-  'msExitFullscreen',
-]
-  .map(f => window.document[f])
-  .find(f => f)
-  .bind(window.document);
-const isFullScreen = () =>
-  [
-    'fullscreenElement',
-    'mozFullScreenElement',
-    'webkitFullscreenElement',
-    'msFullscreenElement',
-  ].some(p => window.document[p]);
-
-const toggleFullScreen = () => {
-  console.log('toggleFullscreen');
-  if (isFullScreen()) {
-    cancelFullScreen();
-  } else {
-    requestFullScreen();
-  }
-};
-
-PIXI.Sprite.prototype.bringToFront = function () {
-  if (this.parent) {
-    const parent = this.parent;
-    parent.removeChild(this);
-    parent.addChild(this);
-  }
-};
-
-for (const type of [PIXI.Point, PIXI.ObservablePoint]) {
-  Object.assign(type['prototype'], {
-    add: function (p) {
-      return new PIXI.Point(this['x'] + p.x, this['y'] + p.y);
-    },
-    negate: function () {
-      return new PIXI.Point(-this['x'], -this['y']);
-    },
-    values: function () {
-      return ['x', 'y'].map(p => this[p]);
-    },
-  });
-}
-
-const scale = (valueInput, rangeInput) => {
-  valueInput.value = Math.trunc(
-    Math.pow((rangeInput.value - rangeInput.min) / (rangeInput.max - rangeInput.min), 2) *
-      (rangeInput.max - rangeInput.min) -
-      -rangeInput.min
-  );
-};
-
-const unScale = (valueInput, rangeInput) => {
-  console.log('unScale');
-  rangeInput.value =
-    Math.trunc(
-      (Math.sqrt(Number(valueInput.value) || rangeInput.min - rangeInput.min) *
-        (rangeInput.max - rangeInput.min)) /
-        Math.sqrt(rangeInput.max - rangeInput.min)
-    ) - -rangeInput.min;
-};
+import { requestFullScreen, toggleFullScreen } from './fullscreen.js';
+import './pixiMixins.js'; // For side effects only.
+import { bindTogether } from './inputUtils.js';
+import { fromQueryString } from './queryString.js';
 
 fromEvent(document, 'DOMContentLoaded')
   .pipe(first())
   .subscribe(() => {
+    const q = fromQueryString(window.location.search);
+
     // Bind the number-of-pieces slider to the numeric input field value
     // so that the values of both inputs stay in sync.
     const numPiecesInput = document.querySelector('#numPiecesInput');
-    const numPiecesSlider = document.querySelector('#numPiecesSlider');
-    fromEvent(numPiecesInput, 'input')
-      .pipe(startWith(undefined))
-      .subscribe(() => unScale(numPiecesInput, numPiecesSlider));
-    fromEvent(numPiecesSlider, 'input').subscribe(() => scale(numPiecesInput, numPiecesSlider));
+    numPiecesInput['value'] = q.numPieces || numPiecesInput['value'] || 24;
+    bindTogether(numPiecesInput, document.querySelector('#numPiecesSlider'));
 
     fromEvent(document.querySelector('#pickDefaultButton'), 'click').subscribe(() => {
       window.location.href = '?image=default.jpeg&numPieces=' + numPiecesInput['value'];
     });
 
-    const fullscreenToggle = document.querySelector('#fullscreenToggle');
-    fromEvent(fullscreenToggle, 'click').subscribe(() => toggleFullScreen());
+    fromEvent(document.querySelector('#fullscreenToggle'), 'click').subscribe(() =>
+      toggleFullScreen()
+    );
 
     const input = document.querySelector('input');
     const imageSelector = document.querySelector('#imageSelector');
@@ -143,8 +56,6 @@ fromEvent(document, 'DOMContentLoaded')
 
     document.body.appendChild(app.view);
 
-    const q = fromQueryString(window.location.search);
-
     const textureSubscriptions = [];
     let currentTexture;
     const textureSource = new Subject().pipe(
@@ -164,13 +75,10 @@ fromEvent(document, 'DOMContentLoaded')
     const pieces = [];
 
     textureSource.subscribe(nextTexture => {
-      console.log('nextTexture', !!nextTexture);
       currentTexture = nextTexture;
-      console.log('nextTexture', currentTexture.width, currentTexture.height);
 
-      const numPieces = q.numPieces || 24;
       const requestedPieceSize = Math.sqrt(
-        (currentTexture.width * currentTexture.height) / numPieces
+        (currentTexture.width * currentTexture.height) / (numPiecesInput['value']||24)
       );
       const gridSize = Math.min(
         Math.trunc(currentTexture.width / Math.round(currentTexture.width / requestedPieceSize)),
@@ -178,7 +86,6 @@ fromEvent(document, 'DOMContentLoaded')
       );
       const columns = Math.trunc(currentTexture.width / gridSize);
       const rows = Math.trunc(currentTexture.height / gridSize);
-      console.log({ gridSize, columns, rows });
 
       const rescale = () => {
         const scale = Math.min(
@@ -188,6 +95,8 @@ fromEvent(document, 'DOMContentLoaded')
         app.stage.scale.set(scale, scale);
       };
 
+      // Cut the texture into pieces, creating a new PIXI.Sprite for each piece and inserting
+      // them into the pieces array in a random order.
       for (let y = 0; y <= currentTexture.height - gridSize; y += gridSize) {
         for (let x = 0; x <= currentTexture.width - gridSize; x += gridSize) {
           pieces.splice(
@@ -321,7 +230,7 @@ fromEvent(document, 'DOMContentLoaded')
               }).readAsDataURL(file)
             )
         ),
-        tap(() => toggleFullScreen())
+        tap(() => requestFullScreen())
       )
       .subscribe(dataUrl => textureSource.next(dataUrl));
 
