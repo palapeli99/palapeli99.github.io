@@ -116,6 +116,10 @@ fromEvent(document, 'DOMContentLoaded')
       .subscribe(() => unScale(numPiecesInput, numPiecesSlider));
     fromEvent(numPiecesSlider, 'input').subscribe(() => scale(numPiecesInput, numPiecesSlider));
 
+    fromEvent(document.querySelector('#pickDefaultButton'), 'click').subscribe(() => {
+      window.location.href = '?image=default.jpeg&numPieces=' + numPiecesInput['value'];
+    });
+
     const fullscreenToggle = document.querySelector('#fullscreenToggle');
     fromEvent(fullscreenToggle, 'click').subscribe(() => toggleFullScreen());
 
