@@ -182,7 +182,6 @@ fromEvent(document, 'DOMContentLoaded')
         piece.rotateClockwise = function () {
           // @ts-ignore
           this.rotation = ((Math.round((this.rotation * 2) / Math.PI) + 1) * Math.PI) / 2;
-          console.log(this.rotation);
         };
         piece.interactive = true;
         piece.buttonMode = true;
@@ -195,7 +194,13 @@ fromEvent(document, 'DOMContentLoaded')
           ...pieces.map(piece => fromEvent(piece, 'touchstart'))
         ).subscribe(e => {
           e.currentTarget.data = e.data;
-          e.currentTarget.selected = true;
+          e.currentTarget.grabbed = true;
+          e.currentTarget.grabOffset = new PIXI.Point();
+          const grabPosition = e.currentTarget.data.getLocalPosition(e.currentTarget.parent);
+          e.currentTarget.grabOffset.set(
+            grabPosition.x - e.currentTarget.position.x,
+            grabPosition.y - e.currentTarget.position.y
+          );
           e.currentTarget.bringToFront();
         }),
         merge(
@@ -204,28 +209,26 @@ fromEvent(document, 'DOMContentLoaded')
           ...pieces.map(piece => fromEvent(piece, 'touchend')),
           ...pieces.map(piece => fromEvent(piece, 'touchendoutside'))
         ).subscribe(e => {
-          console.log('drag end', {
-            dragging: e.currentTarget.dragging,
-            selected: e.currentTarget.selected,
-          });
-          if(e.currentTarget.dragging) {
+          if (e.currentTarget.dragging) {
             e.currentTarget.moveToNearestSlot();
           } else {
             e.currentTarget.rotateClockwise();
           }
-          e.currentTarget.dragging = false;
-          e.currentTarget.selected = false;
-          e.currentTarget.data = null;
+          delete e.currentTarget.dragging;
+          delete e.currentTarget.grabOffset;
+          delete e.currentTarget.data;
         }),
         merge(
           ...pieces.map(piece => fromEvent(piece, 'mousemove')),
           ...pieces.map(piece => fromEvent(piece, 'touchmove'))
         )
-          .pipe(filter(e => e.currentTarget.selected))
+          .pipe(filter(e => e.currentTarget.grabOffset))
           .subscribe(e => {
             e.currentTarget.dragging = true;
+            const dragPosition = e.currentTarget.data.getLocalPosition(e.currentTarget.parent);
             e.currentTarget.position.set(
-              ...Object.values(e.currentTarget.data.getLocalPosition(e.currentTarget.parent))
+              dragPosition.x - e.currentTarget.grabOffset.x,
+              dragPosition.y - e.currentTarget.grabOffset.y
             );
           }),
         merge(fromEvent(window, 'resize'), fromEvent(window, 'orientationchange'))
