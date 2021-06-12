@@ -11,30 +11,29 @@
     <div id="imageSelector" class="hide">
       <span>Drag and drop an image file or </span>
       <input type="file" />
-      <span>...or pick the
-      <button
-        onclick="window.location.href='?image=default.jpeg&numPieces='+document.querySelector('#numPieces').value;"
+      <span
+        >...or pick the
+        <button
+          onclick="window.location.href='?image=default.jpeg&numPieces='+document.querySelector('#numPieces').value;"
+        >
+          default...
+        </button></span
       >
-        default...
-      </button></span>
       <div id="numPiecesDiv">
         <label for="numPieces">Number of pieces to generate:</label>
         <input
           type="text"
-          id="numPieces"
+          id="numPiecesInput"
           value="24"
-          oninput="document.querySelector('#numPiecesSlider').value=this.value"
         />
       </div>
       <input
-          id="numPiecesSlider"
-          type="range"
-          min="4"
-          max="1000"
-          value="24"
-          step="1"
-          oninput="document.querySelector('#numPieces').value=this.value;"
-        />
+        id="numPiecesSlider"
+        type="range"
+        min="4"
+        max="1000"
+        step="1"
+      />
     </div>
     <button id="fullscreenToggle">
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 16 16">

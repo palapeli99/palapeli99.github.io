@@ -10,6 +10,7 @@ import {
   map,
   mergeMap,
   tap,
+  startWith,
   // @ts-ignore
 } from 'https://cdn.skypack.dev/rxjs@^6.6.7/operators?min';
 
@@ -85,9 +86,36 @@ for (const type of [PIXI.Point, PIXI.ObservablePoint]) {
   });
 }
 
+const scale = (valueInput, rangeInput) => {
+  valueInput.value = Math.trunc(
+    Math.pow((rangeInput.value - rangeInput.min) / (rangeInput.max - rangeInput.min), 2) *
+      (rangeInput.max - rangeInput.min) -
+      -rangeInput.min
+  );
+};
+
+const unScale = (valueInput, rangeInput) => {
+  console.log('unScale');
+  rangeInput.value =
+    Math.trunc(
+      (Math.sqrt(Number(valueInput.value) || rangeInput.min - rangeInput.min) *
+        (rangeInput.max - rangeInput.min)) /
+        Math.sqrt(rangeInput.max - rangeInput.min)
+    ) - -rangeInput.min;
+};
+
 fromEvent(document, 'DOMContentLoaded')
   .pipe(first())
   .subscribe(() => {
+    // Bind the number-of-pieces slider to the numeric input field value
+    // so that the values of both inputs stay in sync.
+    const numPiecesInput = document.querySelector('#numPiecesInput');
+    const numPiecesSlider = document.querySelector('#numPiecesSlider');
+    fromEvent(numPiecesInput, 'input')
+      .pipe(startWith(undefined))
+      .subscribe(() => unScale(numPiecesInput, numPiecesSlider));
+    fromEvent(numPiecesSlider, 'input').subscribe(() => scale(numPiecesInput, numPiecesSlider));
+
     const fullscreenToggle = document.querySelector('#fullscreenToggle');
     fromEvent(fullscreenToggle, 'click').subscribe(() => toggleFullScreen());
 
