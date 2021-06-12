@@ -71,6 +71,20 @@ PIXI.Sprite.prototype.bringToFront = function () {
   }
 };
 
+for (const type of [PIXI.Point, PIXI.ObservablePoint]) {
+  Object.assign(type['prototype'], {
+    add: function (p) {
+      return new PIXI.Point(this['x'] + p.x, this['y'] + p.y);
+    },
+    negate: function () {
+      return new PIXI.Point(-this['x'], -this['y']);
+    },
+    values: function () {
+      return [this['x'], this['y']];
+    },
+  });
+}
+
 fromEvent(document, 'DOMContentLoaded')
   .pipe(first())
   .subscribe(() => {
@@ -195,12 +209,10 @@ fromEvent(document, 'DOMContentLoaded')
         ).subscribe(e => {
           e.currentTarget.data = e.data;
           e.currentTarget.grabbed = true;
-          e.currentTarget.grabOffset = new PIXI.Point();
-          const grabPosition = e.currentTarget.data.getLocalPosition(e.currentTarget.parent);
-          e.currentTarget.grabOffset.set(
-            grabPosition.x - e.currentTarget.position.x,
-            grabPosition.y - e.currentTarget.position.y
+          e.currentTarget.grabOffset = e.currentTarget.position.add(
+            e.currentTarget.data.getLocalPosition(e.currentTarget.parent).negate()
           );
+
           e.currentTarget.bringToFront();
         }),
         merge(
@@ -225,11 +237,9 @@ fromEvent(document, 'DOMContentLoaded')
           .pipe(filter(e => e.currentTarget.grabOffset))
           .subscribe(e => {
             e.currentTarget.dragging = true;
-            const dragPosition = e.currentTarget.data.getLocalPosition(e.currentTarget.parent);
-            e.currentTarget.position.set(
-              dragPosition.x - e.currentTarget.grabOffset.x,
-              dragPosition.y - e.currentTarget.grabOffset.y
-            );
+            e.currentTarget.position = e.currentTarget.data
+              .getLocalPosition(e.currentTarget.parent)
+              .add(e.currentTarget.grabOffset);
           }),
         merge(fromEvent(window, 'resize'), fromEvent(window, 'orientationchange'))
           .pipe(debounceTime(500))
