@@ -44,9 +44,14 @@ button {
   display: none !important;
 }
 
+canvas ~ #container.hide ~ button {
+  display: block;
+}
+
+#exitButton,
 #fullscreenToggle {
+  display: none;
   position: absolute;
-  top: 1rem;
   right: 1rem;
   width: 2rem;
   height: 2rem;
@@ -59,6 +64,15 @@ button {
   outline: none;
 }
 
+#exitButton {
+  top: 1rem;
+}
+
+#fullscreenToggle {
+  bottom: 1rem;
+}
+
+#exitButton svg,
 #fullscreenToggle svg {
   --stroke-color: white;
 

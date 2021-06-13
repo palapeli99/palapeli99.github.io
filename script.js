@@ -14,9 +14,6 @@ import { fromQueryString } from './queryString.js';
 import { Table } from './Table.js';
 import { imageFileDataUrlObservable } from './imageFileReceptionist.js';
 
-// TODO: dnd file should reset any image file name in the query string.
-// Also the numPieces input value could be reflected in the query string in real time.
-
 // main()
 fromEvent(document, 'DOMContentLoaded')
   .pipe(first())
@@ -30,12 +27,19 @@ fromEvent(document, 'DOMContentLoaded')
     // Bind the number-of-pieces slider to the numeric input field value
     // so that the values of both inputs stay in sync.
     bindTogether(numPiecesInput, document.querySelector('#numPiecesSlider'));
-    fromEvent(document.querySelector('#pickDefaultButton'), 'click').subscribe(() => {
-      window.location.href = '?image=default.jpeg&numPieces=' + numPiecesInput['value'];
-    });
     fromEvent(document.querySelector('#fullscreenToggle'), 'click').subscribe(() =>
       toggleFullScreen()
     );
+    fromEvent(document.querySelector('#exitButton'), 'click').subscribe(() => {
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.search
+          ? window.location.href.replace(window.location.search, '')
+          : window.location.href
+      );
+      window.location.reload();
+    });
     // ===== SIMPLE UI HOOKS END =====
 
     // Initialize a PIXI application.
@@ -54,7 +58,7 @@ fromEvent(document, 'DOMContentLoaded')
       app.renderer.type === PIXI.WEBGL_RENDERER;
     app.view.style['transform'] = 'translatez(0)'; // iOS GPU workaround
     app.stage = new Table();
-    document.body.appendChild(app.view);
+    document.body.insertBefore(app.view, document.body.firstChild);
 
     // Declare a RxJS subject that will receive image URL's (including data URL's) from multiple sources
     // will provide ready made PIXI.Textures for observers' consumption. SwitchMap will discard any
@@ -78,9 +82,9 @@ fromEvent(document, 'DOMContentLoaded')
     });
 
     // Receive files through the file input and through drag'n'drop
-    fromEvent(window, 'dragover').subscribe(e => e.preventDefault());
+    fromEvent(imageSelectorContainer, 'dragover').subscribe(e => e.preventDefault());
     imageFileDataUrlObservable(
-      fromEvent(window, 'drop'),
+      fromEvent(imageSelectorContainer, 'drop'),
       fromEvent(fileInput, 'change')
     ).subscribe(dataUrl => {
       textureSource.next(dataUrl);
@@ -93,4 +97,9 @@ fromEvent(document, 'DOMContentLoaded')
     } else {
       imageSelectorContainer.classList.remove('hide');
     }
+
+    // Select the default image as the texture source by a click of the 'Pick default' button.
+    fromEvent(document.querySelector('#pickDefaultButton'), 'click').subscribe(() => {
+      textureSource.next('default.jpeg');
+    });
   });
