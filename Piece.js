@@ -12,62 +12,69 @@ export class Piece extends PIXI.Sprite {
     super(...args);
 
     this['anchor'].set(0.5, 0.5);
-    this.zOrder = 0;
     this.rotation = (Math.trunc(Math.random() * 4) * Math.PI) / 2;
     this.interactive = true;
     this.buttonMode = true;
 
     this.subscriptions = [
       merge(fromEvent(this, 'mousedown'), fromEvent(this, 'touchstart')).subscribe(e => {
-        e.currentTarget.data = e.data;
-        e.currentTarget.grabbed = true;
-        e.currentTarget.grabOffset = e.currentTarget.position.add(
-          e.currentTarget.data.getLocalPosition(e.currentTarget.parent).negate()
+        this.data = e.data;
+        this.grabOffset = this.position.add(
+          this.data.getLocalPosition(this['parent']).negate()
         );
-
-        e.currentTarget.bringToFront();
       }),
       merge(
         fromEvent(this, 'mouseup'),
         fromEvent(this, 'mouseupoutside'),
         fromEvent(this, 'touchend'),
         fromEvent(this, 'touchendoutside')
-      ).subscribe(e => {
-        if (e.currentTarget.dragging) {
-          e.currentTarget.moveToNearestSlot();
+      ).subscribe(() => {
+        if (this.dragging) {
+          // Move this piece from the temporary drag time position back 
+          // to its original position in the container.
+          this['parent'].swapWithPlaceholder(this);
+          this.moveToNearestSlot();
         } else {
-          e.currentTarget.rotateClockwise();
+          this.rotateClockwise();
         }
-        delete e.currentTarget.dragging;
-        delete e.currentTarget.grabOffset;
-        delete e.currentTarget.data;
+        delete this.dragging;
+        delete this.grabOffset;
+        delete this.data;
       }),
       merge(fromEvent(this, 'mousemove'), fromEvent(this, 'touchmove'))
-        .pipe(filter(e => e.currentTarget.grabOffset))
-        .subscribe(e => {
-          e.currentTarget.dragging = true;
-          e.currentTarget.position = e.currentTarget.data
-            .getLocalPosition(e.currentTarget.parent)
-            .add(e.currentTarget.grabOffset);
+        .pipe(filter(() => this.grabOffset))
+        .subscribe(() => {
+          this.dragging = true;
+          // Move this piece as the last child of the parent so that it will be
+          // drawn on top of any other piece.
+          this['parent'].swapWithPlaceholder(this);
+          this.position = this.data
+            .getLocalPosition(this['parent'])
+            .add(this.grabOffset);
         }),
     ];
   }
 
   unsubscribe() {
-    for(const subscription of this.subscriptions.splice(0)) {
+    for (const subscription of this.subscriptions.splice(0)) {
       subscription.unsubscribe();
     }
   }
 
   moveToOwnSlot() {
-    this['position'].set(...this['parent'].getSlotPoint(this['parent'].getSlotFor(this)).values());
+    this['position'].set(
+      ...this['parent'].getSlotPosition(this['parent'].getChildIndex(this)).values()
+    );
   }
 
   moveToNearestSlot() {
-    for (const piece of this['parent'].swapSlotContents(
-      this['parent'].findNearestSlot(this['position']),
-      this['parent'].getSlotFor(this)
-    )) {
+    const parent = this['parent'];
+    // const placeholderSlot = parent.getPlaceholderSlot();
+    const mySlot = parent.getChildIndex(this);
+    const nearestSlot = this['parent'].findNearestSlot(this['position']);
+
+    // parent.swapSlotContents(placeholderSlot, nearestSlot);
+    for(const piece of parent.swapSlotContents(nearestSlot, mySlot)) {
       piece.moveToOwnSlot();
     }
   }

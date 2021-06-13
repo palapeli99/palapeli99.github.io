@@ -66,7 +66,7 @@ fromEvent(document, 'DOMContentLoaded')
       })
     );
 
-    // Subscribe to the above subject and prepare the stage (Table) for every new texture received.
+    // Subscribe to the above subject and prepare the Table each time a new texture is received.
     textureSource.subscribe(nextTexture => {
       app.stage.texture = nextTexture;
       app.stage.cutPieces(
