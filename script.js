@@ -24,7 +24,7 @@ fromEvent(document, 'DOMContentLoaded')
     // ===== SIMPLE UI HOOKS START =====
     const q = fromQueryString(window.location.search);
     const fileInput = document.querySelector('#fileInput');
-    const imageSelector = document.querySelector('#imageSelector');
+    const imageSelectorContainer = document.querySelector('#container');
     const numPiecesInput = document.querySelector('#numPiecesInput');
     numPiecesInput['value'] = q.numPieces || numPiecesInput['value'] || 24;
     // Bind the number-of-pieces slider to the numeric input field value
@@ -74,7 +74,7 @@ fromEvent(document, 'DOMContentLoaded')
       );
       app.stage.movePiecesToSlots();
 
-      imageSelector.classList.add('hide');
+      imageSelectorContainer.classList.add('hide');
     });
 
     // Receive files through the file input and through drag'n'drop
@@ -91,6 +91,6 @@ fromEvent(document, 'DOMContentLoaded')
     if (q.image) {
       textureSource.next(q.image);
     } else {
-      imageSelector.classList.remove('hide');
+      imageSelectorContainer.classList.remove('hide');
     }
   });
