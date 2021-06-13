@@ -4,10 +4,19 @@ body {
   margin: 0;
 }
 
-#imageSelector {
+#container {
   position: absolute;
-  margin: 40vh 40vw;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
   z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+}
+
+#imageSelector {
   display: flex;
   flex-direction: column;
   align-content: center;
